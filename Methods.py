@@ -1,11 +1,10 @@
 import asyncio
 import os
 from datetime import datetime, timedelta
-import Actions_class
-import AccessToken
 import sys
 import requests
 import pandas as pd
+import Authorization
 
 today_date = datetime.now().date()
 
@@ -35,7 +34,7 @@ async def ohlc_lastdayclose(ISINCODE):
 
 async def get_price(isin_code, key):
     """Gets the last price of the stock"""
-    isin_code_output = await Actions_class.APIActions.get_quote("NSE_EQ|" + isin_code, key)
+    isin_code_output = await Authorization.APIActions.get_quote("NSE_EQ|" + isin_code, key)
     isin_lastprice = isin_code_output['data']
     first_key = list(isin_lastprice.keys())[0]
     return isin_lastprice[first_key]['last_price']
@@ -48,7 +47,7 @@ async def wait_until(target_time):
         print(f"Time remaining: {time_remaining}")
 
 async def amount_available(key,percentage):
-    cash_avail = await Actions_class.APIActions.get_funds(key)
+    cash_avail = await Authorization.APIActions.get_funds(key)
     if cash_avail['status'] == 'success':
         exact_cash_available = cash_avail['data']['equity']['available_margin']
     else:
@@ -81,7 +80,7 @@ async def get_target(is_bull,close_price,percentage):
     return target
 
 async def calculate_buy_sell_ratio(isin_code,key):
-    market_quote = await Actions_class.APIActions.get_quote("NSE_EQ|" + isin_code, key)
+    market_quote = await Authorization.APIActions.get_quote("NSE_EQ|" + isin_code, key)
     data = market_quote['data']
     for symbol, details in data.items():
         total_buy_quantity = details['total_buy_quantity']
@@ -94,7 +93,7 @@ async def calculate_buy_sell_ratio(isin_code,key):
     return ratio
 
 async def netchange(isin_code,key):
-    market_quote = await Actions_class.APIActions.get_quote("NSE_EQ|" + isin_code, key)
+    market_quote = await Authorization.APIActions.get_quote("NSE_EQ|" + isin_code, key)
     data = market_quote['data']
     for symbol, details in data.items():
         netchange = details['net_change']  
@@ -111,7 +110,7 @@ async def check_access(file_path):
         modification_date = datetime.fromtimestamp(modification_time).date()
         if modification_date != today_date:
             print("Access token is not created today")
-            await AccessToken.main()
+            await Authorization.APIActions.AccessToken()
     else:
         print("Access token is not present in the required location")
-        await AccessToken.main()
+        await Authorization.APIActions.AccessToken()

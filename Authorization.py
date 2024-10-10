@@ -5,12 +5,13 @@ from typing import List, Dict
 import aiohttp
 from urllib.parse import quote
 import urllib
+from datetime import datetime
 
 class APIActions:
-    api_key = "API KEY here"
-    api_secret = "API Sercret here"
-    redirect_uri = "Redirect URI here"
-    state = "Statr here"
+    api_key = "APIKEY"
+    api_secret = "APISECRET"
+    redirect_uri = "https://127.0.0.1:5000/"
+    state = "state"
     authorization_code = None
 
     @staticmethod
@@ -39,6 +40,40 @@ class APIActions:
         except Exception as ex:
             print(f"An error occurred: {str(ex)}")
             return "Something Failed"
+        
+    @staticmethod
+
+    @staticmethod
+    async def AccessToken():
+        current_dir = r'C:\Users\Prasad\Music\Share market'
+        file_path = os.path.join(current_dir, 'access_token.txt')
+        
+        if os.path.exists(file_path):
+            modification_time = os.path.getmtime(file_path)
+            modification_date = datetime.fromtimestamp(modification_time).date()
+            today_date = datetime.now().date()
+            
+            if modification_date == today_date:
+                with open(file_path, 'r') as file:
+                    file_content = file.read()
+                return file_content
+            else:
+                print(APIActions.get_website())  
+                authorization_code = input("Enter the authorization code: ")
+                file_content = await APIActions.final_output(authorization_code)  
+                with open(file_path, 'w') as file:
+                    file.write(file_content)
+                
+                return file_content
+        else:
+            print("Creating access_token.txt...")
+            print(APIActions.get_website())  
+            authorization_code = input("Enter the authorization code: ")
+            file_content = await APIActions.final_output(authorization_code) 
+            with open(file_path, 'w') as file:
+                file.write(file_content)
+                
+            return file_content
 
     @staticmethod
     async def get_funds(your_access_token: str) -> str:
@@ -271,11 +306,11 @@ class APIActions:
                     print(f"Failed to place order. Status Code: {response.status}")
 
     @staticmethod
-    async def convert_position(your_access_token):
+    async def convert_position(your_access_token,INKEY):
         url = "https://api.upstox.com/v2/portfolio/convert-position"
 
         data = {
-            "instrument_token": "NSE_EQ|INE699H01024",
+            "instrument_token": "NSE_EQ|"+INKEY,
             "new_product": "I",
             "old_product": "D",
             "transaction_type": "SELL",
@@ -368,4 +403,6 @@ class APIActions:
         except Exception as e:
             print(f"An error occurred: {str(e)}")
             return "No data"
+        
+    
     
