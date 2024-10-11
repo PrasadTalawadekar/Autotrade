@@ -114,3 +114,70 @@ async def check_access(file_path):
     else:
         print("Access token is not present in the required location")
         await Authorization.APIActions.AccessToken()
+
+async def last30days1mins(ISINCODE):
+    """Fetches OHLC data from NSE"""
+    url = f'https://api.upstox.com/v2/historical-candle/NSE_EQ%7C{ISINCODE}/1minute/{today_date-timedelta(days = 1)}/{today_date-timedelta(days = 31)}'
+    headers = {'Accept': 'application/json'}
+    response = requests.get(url, headers=headers)
+    if response.status_code == 200:
+        data = response.json()
+        if data['status'] == 'success':
+            yesterday_candle = data['data']['candles']
+            return yesterday_candle
+
+    return None
+
+async def fetch_and_combine(isincode):
+    abc1 = ohlc_NSE(isincode)
+    
+    df1 = pd.DataFrame(abc1, columns=['Timestamp', 'Open', 'High', 'Low', 'Close', 'Volume', 'Other'])
+    df1['Timestamp'] = pd.to_datetime(df1['Timestamp'])
+    df1.set_index('Timestamp', inplace=True)
+
+    # Update '5T' to '5min'
+    resampled_df1 = df1.resample('5min').agg({
+        'Open': 'first',
+        'High': 'max',
+        'Low': 'min',
+        'Close': 'last',
+        'Volume': 'sum',
+        'Other': 'sum'  # If needed
+    })
+    resampled_df1.reset_index(inplace=True)
+
+    # Drop rows where all OHLC columns are NaN
+    resampled_df1.dropna(subset=['Open', 'High', 'Low', 'Close'], inplace=True)
+
+    # Second dataset: Last 30 days 1-min OHLC resampled to 5-min intervals (asynchronous)
+    abc2 = await last30days1mins(isincode)
+
+    df2 = pd.DataFrame(abc2, columns=['Timestamp', 'Open', 'High', 'Low', 'Close', 'Volume', 'Other'])
+    df2['Timestamp'] = pd.to_datetime(df2['Timestamp'])
+    df2.set_index('Timestamp', inplace=True)
+
+    # Update '5T' to '5min'
+    resampled_df2 = df2.resample('5min').agg({
+        'Open': 'first',
+        'High': 'max',
+        'Low': 'min',
+        'Close': 'last',
+        'Volume': 'sum',
+        'Other': 'sum'  # If needed
+    })
+    resampled_df2.reset_index(inplace=True)
+
+    # Drop rows where all OHLC columns are NaN
+    resampled_df2.dropna(subset=['Open', 'High', 'Low', 'Close'], inplace=True)
+
+    # Combine both DataFrames
+    combined_df = pd.concat([resampled_df1, resampled_df2], ignore_index=True)
+
+    # Sort by timestamp to maintain chronological order
+    combined_df.sort_values(by='Timestamp', inplace=True)
+
+    # Reset index after sorting
+    combined_df.reset_index(drop=True, inplace=True)
+
+    # Print the combined DataFrame
+    return(combined_df)

@@ -11,6 +11,7 @@ import matplotlib.pyplot as plt
 # Function to handle asynchronous call for last30days1mins and combine the data
 async def fetch_and_combine():
     while True:
+        print("yes")
         abc2 = await md.fetch_and_combine('INE256A01028')
         abc2['50 SMA'] = abc2['Close'].rolling(window=50).mean()
         abc2['200 SMA'] = abc2['Close'].rolling(window=200).mean()
